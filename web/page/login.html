@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 / 注册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(120deg, #f5f5f5, #ffffff);
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.1);
+            padding: 30px;
+            width: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 25px rgba(0, 123, 255, 0.2);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid #2196F3;
+            color: #2196F3;
+        }
+
+        .tab:hover {
+            background-color: rgba(33, 150, 243, 0.1);
+        }
+
+        .form {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form.active {
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #2196F3, #03a9f4);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #1976D2, #2196F3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">登录</div>
+        <div class="tab" onclick="switchTab('register')">注册</div>
+    </div>
+
+    <!-- 修改登录表单，添加 id 属性 -->
+    <div class="form active" id="login">
+        <input type="text" name="account" placeholder="账户">
+        <input type="password" name="password" placeholder="密码">
+        <button onclick="handleSubmit('login')">登录</button>
+    </div>
+
+    <!-- 修改注册表单，添加 id 属性 -->
+    <div class="form" id="register">
+        <input type="text" name="account" placeholder="账户">
+        <input type="email" name="email" placeholder="邮箱">
+        <input type="password" name="password" placeholder="密码">
+        <input type="password" name="confirmPassword" placeholder="确认密码">
+        <button onclick="handleSubmit('register')">注册</button>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+
+        document.querySelector(`.tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
+        document.getElementById(tab).classList.add('active');
+    }
+    // 表单提交处理函数
+    async function handleSubmit(formType) {
+        try {
+            const form = document.getElementById(formType);
+            const inputs = form.getElementsByTagName('input');
+            const formData = {};
+
+            // 表单验证（放在数据收集之前）
+            if (formType === 'register') {
+                const password = form.querySelector('input[name="password"]').value.trim();
+                const confirmPassword = form.querySelector('input[name="confirmPassword"]').value.trim();
+
+                if (password !== confirmPassword) {
+                    alert('两次输入的密码不一致！');
+                    return;
+                }
+            }
+
+            // 收集表单数据
+            for (let input of inputs) {
+                // 跳过确认密码字段
+                if (input.name !== 'confirmPassword') {
+                    formData[input.name] = input.value;
+                }
+            }
+
+            console.log('发送到后端的数据：', formData);
+
+            // 定义 API 端点
+            const apiEndpoints = {
+                login: 'http://127.0.0.1:9090/user/login',
+                register: 'http://127.0.0.1:9090/user/register'
+            };
+
+            // 发送请求到后端
+            const response = await fetch(apiEndpoints[formType], {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                throw new Error('请求失败');
+            }
+
+            const result = await response.json();
+
+            // 处理响应
+            if (result.success) {
+                if (formType === 'login') {
+                    let baseUrl = 'http://127.0.0.1:9090/chat/';
+                    let href = baseUrl + encodeURIComponent(result.account);  // 预先生成完整的 URL
+
+                    console.log("Generated URL:", href);
+
+                    window.location.href = href;
+                } else {
+                    // 注册成功，切换到登录表单
+                    alert('注册成功！');
+                    switchTab('login');
+                    // 可选：自动填充用户名
+                    document.querySelector('#login input[name="account"]').value = formData.account;
+                }
+            } else {
+                alert(result.message || '操作失败，请重试！');
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('操作失败，请检查网络连接！');
+        }
+    }
+
+    // 添加表单回车提交功能
+    document.querySelectorAll('.form').forEach(form => {
+        form.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const formType = form.id;
+                handleSubmit(formType);
+            }
+        });
+    });
+</script>
+</body>
+</html>
