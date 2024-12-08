@@ -3,6 +3,7 @@ package handler
 import (
 	"IMChat_App/internal/model"
 	"IMChat_App/internal/service"
+	"IMChat_App/pkg/common"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -61,7 +62,7 @@ func Login(c *gin.Context) {
 
 func SearchUser(c *gin.Context) {
 	var account string
-	account = c.PostForm("account")
+	account = c.Query("account")
 	flag, res := service.SearchUser(account)
 	if flag == false {
 		fmt.Println("查找用户不存在")
@@ -73,8 +74,28 @@ func SearchUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success":  true,
+		"id":       res.ID,
 		"account":  res.Account,
 		"username": res.Username,
 		"avatar":   res.Avatar,
+	})
+}
+
+func AddUser(c *gin.Context) {
+	var req common.AddUserReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "无效的请求数据",
+		})
+		return
+	}
+
+	service.AddUser(&req)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "好友请求已发送",
 	})
 }

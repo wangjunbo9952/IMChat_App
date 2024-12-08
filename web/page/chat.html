@@ -194,12 +194,192 @@
         .send-button i {
             font-size: 16px;
         }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(45deg, #2196F3, #03a9f4);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .close-btn {
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-form input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-form input:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #2196F3, #03a9f4);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-btn:hover {
+            background: linear-gradient(45deg, #1976D2, #2196F3);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .search-result {
+            min-height: 100px;
+            border-radius: 8px;
+            background-color: #f5f5f5;
+            padding: 10px;
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        /* 搜索结果样式 */
+        .user-card {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .user-info p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .add-friend-btn {
+            padding: 8px 16px;
+            background: linear-gradient(45deg, #2196F3, #03a9f4);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .add-friend-btn:hover {
+            background: linear-gradient(45deg, #1976D2, #2196F3);
+            transform: translateY(-2px);
+        }
+
+        .no-result, .error-msg {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error-msg {
+            color: #f44336;
+        }
     </style>
 </head>
 <body>
 <!-- 最左侧导航栏 -->
 <div class="nav-sidebar">
     <img src="{{.user.Avatar}}" alt="头像" class="avatar">
+    <input type="hidden" id="currentUserId" value="{{.user.ID}}">
 
     <div class="nav-icon active">
         <i class="fas fa-comments fa-lg"></i>
@@ -251,7 +431,33 @@
     </div>
 </div>
 
+<!-- 添加在 body 内，其他内容的后面 -->
+<div id="addFriendModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>添加好友</h3>
+            <span class="close-btn">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="search-form">
+                <input type="text" id="friendAccount" placeholder="请输入好友账号">
+                <button class="search-btn" onclick="searchFriend()">
+                    <i class="fas fa-search"></i>
+                    查询
+                </button>
+            </div>
+            <div id="searchResult" class="search-result">
+                <!-- 搜索结果将在这里显示 -->
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+
+    const currentUserId = document.getElementById('currentUserId').value;
+
+
     function toggleDropdown() {
         const dropdown = document.getElementById('dropdownMenu');
         dropdown.classList.toggle('show');
@@ -290,6 +496,119 @@
     document.getElementById('messageInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             sendMessage();
+        }
+    });
+
+    // 获取模态框元素
+    const modal = document.getElementById('addFriendModal');
+    const closeBtn = document.querySelector('.close-btn');
+
+    // 点击添加好友时打开模态框
+    document.querySelector('.dropdown-item:first-child').addEventListener('click', function(e) {
+        e.preventDefault();
+        modal.style.display = 'block';
+        document.getElementById('friendAccount').focus();
+    });
+
+    // 点击关闭按钮关闭模态框
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    // 点击模态框外部关闭
+    window.addEventListener('click', function(e) {
+        if (e.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // 搜索好友功能
+    // 在 chat.html 的 script 标签中修改 searchFriend 函数
+    async function searchFriend() {
+        const account = document.getElementById('friendAccount').value.trim();
+        const searchResult = document.getElementById('searchResult');
+
+        if (!account) {
+            alert('请输入好友账号');
+            return;
+        }
+
+        try {
+            searchResult.innerHTML = '正在搜索...';
+
+            const response = await fetch(`http://127.0.0.1:9090/user/searchuser?account=${account}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            console.log('搜索到的用户ID:', result.id);
+
+            if (result.success) {
+                // 显示搜索结果
+                searchResult.innerHTML = `
+                <div class="user-card">
+                    <img src="${result.avatar || '/static/default-avatar.jpg'}" alt="头像" class="user-avatar">
+                    <div class="user-info">
+                        <h4>${result.username}</h4>
+                        <p>${result.account}</p>
+                    </div>
+                    <button class="add-friend-btn" onclick="addFriend(${result.id})">
+                        <i class="fas fa-user-plus"></i>
+                        添加
+                    </button>
+                </div>
+            `;
+            } else {
+                searchResult.innerHTML = '<p class="no-result">未找到该用户</p>';
+            }
+        } catch (error) {
+            console.error('搜索失败:', error);
+            searchResult.innerHTML = '<p class="error-msg">搜索失败，请重试</p>';
+        }
+    }
+
+    // 添加好友函数
+    async function addFriend(targetUserId) {
+
+        const numUserId = Number(currentUserId);
+        const numFriendId = Number(targetUserId);
+
+        try {
+            const response = await fetch('http://127.0.0.1:9090/user/adduser', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId: numUserId,
+                    friendId: numFriendId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('好友请求已发送');
+                document.getElementById('addFriendModal').style.display = 'none';
+            } else {
+                alert(result.message || '添加好友失败');
+            }
+        } catch (error) {
+            console.error('添加好友失败:', error);
+            alert('添加好友失败，请重试');
+        }
+    }
+
+    // 添加回车搜索功能
+    document.getElementById('friendAccount').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchFriend();
         }
     });
 </script>

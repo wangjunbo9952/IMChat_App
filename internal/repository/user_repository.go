@@ -3,6 +3,7 @@ package repository
 import (
 	"IMChat_App/internal/dao/pool"
 	"IMChat_App/internal/model"
+	"IMChat_App/pkg/common"
 	"github.com/google/uuid"
 )
 
@@ -49,4 +50,18 @@ func SearchUser(account string) (bool, *model.User) {
 
 	return true, &user
 
+}
+
+func AddUser(relation *common.AddUserReq) {
+	db := pool.GetDB()
+	var fri_ship model.FriendShip
+	if relation.UserID <= relation.FriendID {
+		fri_ship.UserId = uint(relation.UserID)
+		fri_ship.FriendId = uint(relation.FriendID)
+	} else {
+		fri_ship.UserId = uint(relation.FriendID)
+		fri_ship.FriendId = uint(relation.UserID)
+	}
+	fri_ship.Status = common.PENDING
+	db.Create(&fri_ship)
 }

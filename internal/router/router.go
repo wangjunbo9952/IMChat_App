@@ -15,7 +15,8 @@ func NewRouter() {
 	r.GET("/chat/:account", handler.LoadChatPage)
 	r.POST("/user/register", handler.Register)
 	r.POST("/user/login", handler.Login)
-	r.POST("/user/searchuser", handler.SearchUser)
+	r.POST("/user/adduser", handler.AddUser)
+	r.GET("/user/searchuser", handler.SearchUser)
 
 	r.Run(":9090")
 }
