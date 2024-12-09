@@ -21,3 +21,7 @@ func SearchUser(account string) (bool, *model.User) {
 func AddUser(relation *common.AddUserReq) {
 	repository.AddUser(relation)
 }
+
+func GetFriendsList(userid uint) *[]model.User {
+	return repository.GetFriendsList(userid)
+}

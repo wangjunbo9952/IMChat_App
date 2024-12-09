@@ -17,6 +17,7 @@ func NewRouter() {
 	r.POST("/user/login", handler.Login)
 	r.POST("/user/adduser", handler.AddUser)
 	r.GET("/user/searchuser", handler.SearchUser)
+	r.GET("/user/getfriends", handler.GetFriendsList)
 
 	r.Run(":9090")
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 func Register(c *gin.Context) {
@@ -97,5 +98,28 @@ func AddUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "好友请求已发送",
+	})
+}
+
+func GetFriendsList(c *gin.Context) {
+	userId := c.Query("userId")
+
+	userIdUint, err := strconv.ParseUint(userId, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "无效的用户ID",
+		})
+		return
+	}
+
+	finalUserId := uint(userIdUint)
+
+	var res *[]model.User
+	res = service.GetFriendsList(finalUserId)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"friends": *res,
 	})
 }

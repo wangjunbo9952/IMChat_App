@@ -65,3 +65,23 @@ func AddUser(relation *common.AddUserReq) {
 	fri_ship.Status = common.PENDING
 	db.Create(&fri_ship)
 }
+
+func GetFriendsList(userid uint) *[]model.User {
+	db := pool.GetDB()
+	mres := make([]model.FriendShip, 0)
+	res := make([]model.User, 0)
+	db.Raw("SELECT * FROM friend_ships WHERE user_id = ? OR friend_id = ?;", userid, userid).Scan(&mres)
+	for _, v := range mres {
+		var friend model.User
+		if v.Status != common.ACCEPTED {
+			continue
+		}
+		friendId := v.FriendId
+		if friendId == userid {
+			friendId = v.UserId
+		}
+		db.First(&friend, "id = ?", friendId)
+		res = append(res, friend)
+	}
+	return &res
+}

@@ -373,6 +373,57 @@
         .error-msg {
             color: #f44336;
         }
+        .friends-container {
+            padding: 15px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .friend-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .friend-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .friend-item:last-child {
+            border-bottom: none;
+        }
+
+        .friend-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .friend-info {
+            flex: 1;
+        }
+
+        .friend-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .friend-account {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .no-friends {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -384,9 +435,12 @@
     <div class="nav-icon active">
         <i class="fas fa-comments fa-lg"></i>
     </div>
-    <div class="nav-icon">
+    <!-- 导航栏图标 -->
+    <div class="nav-icon" onclick="loadFriendsList()">
         <i class="fas fa-user-friends fa-lg"></i>
     </div>
+
+
     <div class="nav-icon">
         <i class="fas fa-users fa-lg"></i>
     </div>
@@ -412,6 +466,9 @@
 <!-- 列表区域 -->
 <div class="list-sidebar">
     <!-- 聊天/好友/群组列表将在这里显示 -->
+    <div id="friendsContainer" class="friends-container">
+        <!-- 好友列表将在这里动态显示 -->
+    </div>
 </div>
 
 <!-- 主聊天区域 -->
@@ -611,6 +668,49 @@
             searchFriend();
         }
     });
+
+    async function loadFriendsList() {
+        try {
+            console.log('加载好友列表，当前用户ID:', currentUserId);
+
+            const response = await fetch(`http://127.0.0.1:9090/user/getfriends?userId=${currentUserId}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+            console.log('服务器返回的好友列表:', result);
+
+            if (result.success) {
+                const container = document.getElementById('friendsContainer');
+
+                // 检查是否有好友
+                if (!result.friends || result.friends.length === 0) {
+                    container.innerHTML = '<div class="no-friends">暂无好友</div>';
+                    return;
+                }
+
+                // 使用 map 遍历好友列表，为每个好友创建 HTML
+                const friendsHTML = result.friends.map(friend => `
+                <div class="friend-item">
+                    <img src="${friend.avatar || '/static/default-avatar.jpg'}" alt="头像" class="friend-avatar">
+                    <div class="friend-info">
+                        <div class="friend-name">${friend.username}</div>
+                        <div class="friend-account">${friend.account}</div>
+                    </div>
+                </div>
+            `).join('');
+
+                // 将生成的 HTML 插入到容器中
+                container.innerHTML = friendsHTML;
+            }
+        } catch (error) {
+            console.error('请求失败:', error);
+        }
+    }
 </script>
 </body>
 </html>
