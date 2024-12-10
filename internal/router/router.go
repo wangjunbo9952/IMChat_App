@@ -19,6 +19,8 @@ func NewRouter() {
 	r.GET("/user/searchuser", handler.SearchUser)
 	r.GET("/user/getfriends", handler.GetFriendsList)
 
+	r.POST("/user/history", handler.GetMsg)
+
 	r.Run(":9090")
 }
 

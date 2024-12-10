@@ -424,6 +424,45 @@
             color: #666;
             font-size: 14px;
         }
+
+        .message {
+            margin-bottom: 15px;
+            max-width: 70%;
+        }
+
+        .message.sent {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.received {
+            margin-right: auto;
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 15px;
+            background-color: #e3f2fd;
+            margin-bottom: 5px;
+        }
+
+        .message.sent .message-content {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .no-messages {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -695,20 +734,70 @@
 
                 // 使用 map 遍历好友列表，为每个好友创建 HTML
                 const friendsHTML = result.friends.map(friend => `
-                <div class="friend-item">
-                    <img src="${friend.avatar || '/static/default-avatar.jpg'}" alt="头像" class="friend-avatar">
-                    <div class="friend-info">
-                        <div class="friend-name">${friend.username}</div>
-                        <div class="friend-account">${friend.account}</div>
-                    </div>
-                </div>
-            `).join('');
+    <div class="friend-item" onclick="showChatHistory(${friend.ID}, '${friend.username}')">
+        <img src="${friend.avatar || '/static/default-avatar.jpg'}" alt="头像" class="friend-avatar">
+        <div class="friend-info">
+            <div class="friend-name">${friend.username}</div>
+            <div class="friend-account">${friend.account}</div>
+        </div>
+    </div>
+`).join('');
 
                 // 将生成的 HTML 插入到容器中
                 container.innerHTML = friendsHTML;
             }
         } catch (error) {
             console.error('请求失败:', error);
+        }
+    }
+
+    async function showChatHistory(friendId, friendName) {
+        // 更新聊天头部显示的好友名称
+        document.querySelector('.chat-header h2').textContent = friendName;
+
+        try {
+            const msgReq = {
+                messageType: 1,  // 假设 1 代表获取聊天记录
+                userId: Number(currentUserId),
+                targetID: Number(friendId)
+            };
+
+            const response = await fetch('http://127.0.0.1:9090/user/history', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(msgReq)
+            });
+
+            const result = await response.json();
+            const chatMessages = document.querySelector('.chat-messages');
+
+            if (result.success && result.messages) {
+                const messagesHTML = result.messages.map(msg => {
+                    const numCurrentUserId = Number(currentUserId);
+                    const numSenderId = Number(msg.senderId);
+
+                    console.log('消息发送者ID:', numSenderId);
+                    console.log('当前用户ID:', numCurrentUserId);
+                    console.log('是否是发送消息:', numSenderId === numCurrentUserId);
+
+                    return `
+                <div class="message ${numSenderId === numCurrentUserId ? 'sent' : 'received'}">
+                    <div class="message-content">${msg.content}</div>
+                    <div class="message-time">${new Date(msg.timestamp).toLocaleString()}</div>
+                </div>
+            `;
+                }).join('');
+
+                chatMessages.innerHTML = messagesHTML;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } else {
+                chatMessages.innerHTML = '<div class="no-messages">暂无聊天记录</div>';
+            }
+        } catch (error) {
+            console.error('获取聊天记录失败:', error);
         }
     }
 </script>
