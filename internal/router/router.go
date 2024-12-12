@@ -11,7 +11,9 @@ func NewRouter() {
 	r := gin.Default()
 	r.Use(Cors())
 
-	r.LoadHTMLFiles("web/page/chat.html")
+	r.Static("/css", "./web/static/css")
+	r.Static("/js", "./web/static/js")
+	r.LoadHTMLFiles("web/templates/chat.html")
 
 	r.GET("/ws", websocket.RunSocket)
 

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天室</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/chat.css">
+</head>
+<body>
+<!-- 最左侧导航栏 -->
+<div class="nav-sidebar">
+    <img src="{{.user.Avatar}}" alt="头像" class="avatar">
+    <input type="hidden" id="currentUserId" value="{{.user.ID}}">
+    <input type="hidden" id="currentUserAccount" value="{{.user.Account}}">
+
+    <div class="nav-icon active">
+        <i class="fas fa-comments fa-lg"></i>
+    </div>
+    <!-- 导航栏图标 -->
+    <div class="nav-icon" onclick="loadFriendsList()">
+        <i class="fas fa-user-friends fa-lg"></i>
+    </div>
+
+
+    <div class="nav-icon">
+        <i class="fas fa-users fa-lg"></i>
+    </div>
+    <div class="add-button" onclick="toggleDropdown()">
+        <i class="fas fa-plus"></i>
+    </div>
+    <!-- 添加WebSocket连接图标 -->
+    <div class="nav-icon" id="ws-connect" onclick="connectWebSocket()">
+        <i class="fas fa-plug fa-lg"></i>
+    </div>
+    <div class="dropdown-menu" id="dropdownMenu">
+        <a href="#" class="dropdown-item">
+            <i class="fas fa-user-plus"></i>
+            添加好友
+        </a>
+        <a href="#" class="dropdown-item">
+            <i class="fas fa-plus-circle"></i>
+            创建群组
+        </a>
+        <a href="#" class="dropdown-item">
+            <i class="fas fa-users"></i>
+            加入群组
+        </a>
+    </div>
+</div>
+
+<!-- 列表区域 -->
+<div class="list-sidebar">
+    <!-- 聊天/好友/群组列表将在这里显示 -->
+    <div id="friendsContainer" class="friends-container">
+        <!-- 好友列表将在这里动态显示 -->
+    </div>
+</div>
+
+<!-- 主聊天区域 -->
+<div class="main-content">
+    <div class="chat-header">
+        <h2>聊天对象名称</h2>
+    </div>
+    <div class="chat-messages">
+        <!-- 聊天消息将在这里显示 -->
+    </div>
+    <div class="chat-input">
+        <input type="text" placeholder="输入消息..." id="messageInput">
+        <button class="send-button" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+            发送
+        </button>
+    </div>
+</div>
+
+<!-- 添加在 body 内，其他内容的后面 -->
+<div id="addFriendModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>添加好友</h3>
+            <span class="close-btn">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="search-form">
+                <input type="text" id="friendAccount" placeholder="请输入好友账号">
+                <button class="search-btn" onclick="searchFriend()">
+                    <i class="fas fa-search"></i>
+                    查询
+                </button>
+            </div>
+            <div id="searchResult" class="search-result">
+                <!-- 搜索结果将在这里显示 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/chat.js"></script>
+</body>
+</html>

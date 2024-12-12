@@ -3,6 +3,7 @@ package main
 import (
 	"IMChat_App/internal/dao/pool"
 	"IMChat_App/internal/router"
+	"IMChat_App/internal/websocket"
 	"fmt"
 )
 
@@ -12,6 +13,9 @@ func main() {
 		fmt.Println("mysql connect failed!")
 		return
 	}
+
+	go websocket.MyServer.Start()
+
 	router.NewRouter()
 	// fmt.Println("mysql connect success")
 

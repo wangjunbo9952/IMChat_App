@@ -34,7 +34,7 @@ func RunSocket(c *gin.Context) {
 
 	MyServer.Register <- client
 
-	fmt.Println("websocket success")
+	fmt.Println("websocket connect success")
 
 	go client.Read()
 	go client.Write()
