@@ -10,4 +10,8 @@ const (
 	// 消息类型，单聊或者群聊
 	MESSAGE_TYPE_USER  = 1
 	MESSAGE_TYPE_GROUP = 2
+
+	// 心跳监测
+	HEAT_BEAT = "heatbeat"
+	PONG      = "pong"
 )

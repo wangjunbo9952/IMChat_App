@@ -2,6 +2,7 @@ package router
 
 import (
 	"IMChat_App/internal/handler"
+	"IMChat_App/internal/websocket"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -11,6 +12,8 @@ func NewRouter() {
 	r.Use(Cors())
 
 	r.LoadHTMLFiles("web/page/chat.html")
+
+	r.GET("/ws", websocket.RunSocket)
 
 	r.GET("/chat/:account", handler.LoadChatPage)
 	r.POST("/user/register", handler.Register)
