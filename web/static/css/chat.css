@@ -474,3 +474,119 @@ body {
 #ws-connect.disconnected {
     color: #f44336;  /* 未连接时显示红色 */
 }
+
+/* 在 chat.css 中添加以下样式 */
+
+.friend-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border-radius: 8px;
+    margin: 5px;
+}
+
+.friend-item:hover {
+    background-color: #f5f5f5;
+}
+
+.friend-item.active {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196F3;
+}
+
+.friend-item .friend-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.friend-item .friend-info {
+    flex: 1;
+}
+
+.friend-item .friend-name {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.friend-item .friend-account {
+    font-size: 12px;
+    color: #666;
+}
+
+/* 禁用状态的输入框样式 */
+#messageInput:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+/* 加载中的样式 */
+.loading-messages {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+/* 无消息提示的样式 */
+.no-messages {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 14px;
+}
+
+/* 错误消息的样式 */
+.error-message {
+    text-align: center;
+    padding: 20px;
+    color: #f44336;
+    background-color: #ffebee;
+    border-radius: 4px;
+    margin: 10px;
+}
+
+/* 消息气泡样式优化 */
+.message {
+    margin-bottom: 15px;
+    max-width: 70%;
+    clear: both;
+}
+
+.message.sent {
+    float: right;
+}
+
+.message.received {
+    float: left;
+}
+
+.message-content {
+    padding: 10px 15px;
+    border-radius: 15px;
+    background-color: #f5f5f5;
+    margin-bottom: 5px;
+    word-wrap: break-word;
+}
+
+.message.sent .message-content {
+    background-color: #2196F3;
+    color: white;
+}
+
+.message-time {
+    font-size: 12px;
+    color: #999;
+    text-align: right;
+    clear: both;
+}
+
+/* 确保消息容器正确清除浮动 */
+.chat-messages::after {
+    content: '';
+    display: table;
+    clear: both;
+}

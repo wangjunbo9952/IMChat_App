@@ -1,6 +1,36 @@
 const currentUserId = document.getElementById('currentUserId').value;
 const currentUserAccount = document.getElementById('currentUserAccount').value;
+let ws = null;
+let currentChatUser = null; // 当前聊天对象
 
+
+// 首先定义Message结构
+const messageProto = `
+syntax = "proto3";
+
+message Message {
+    string avatar = 1;       
+    string fromUsername = 2; 
+    string from = 3;         
+    string to = 4;           
+    string content = 5;      
+    int32 contentType = 6;   
+    string type = 7;         
+    int32 messageType = 8;   
+    string url = 9;          
+    string fileSuffix = 10;  
+    bytes file = 11;        
+}`;
+
+// 在页面加载时初始化protobuf
+let Message;
+try {
+    const root = protobuf.parse(messageProto).root;
+    Message = root.lookupType("Message");
+    console.log("Protobuf 初始化成功");
+} catch (err) {
+    console.error("Protobuf 初始化失败:", err);
+}
 
 function toggleDropdown() {
     const dropdown = document.getElementById('dropdownMenu');
@@ -30,9 +60,123 @@ function sendMessage() {
     const input = document.getElementById('messageInput');
     const message = input.value.trim();
 
-    if (message) {
-        console.log('发送消息:', message);
+    if (!message || !currentChatUser || !ws) {
+        console.error('无法发送消息：消息为空或未选择聊天对象或WebSocket未连接');
+        return;
+    }
+
+    try {
+        const msgData = {
+            avatar: '/static/default-avatar.jpg',
+            fromUsername: currentUserAccount,
+            from: currentUserId,
+            to: currentChatUser,
+            content: message,
+            contentType: 1,
+            type: 'chat',
+            messageType: 1,
+            url: '',
+            fileSuffix: '',
+            file: new Uint8Array(),
+            timestamp: Date.now() // 添加时间戳
+        };
+
+        // 验证消息格式
+        const errMsg = Message.verify(msgData);
+        if (errMsg) {
+            throw Error(errMsg);
+        }
+
+        // 创建消息实例
+        const protoMessage = Message.create(msgData);
+
+        // 序列化消息
+        const buffer = Message.encode(protoMessage).finish();
+
+        // 发送二进制数据
+        ws.send(buffer);
+
+        // 显示发送的消息
+        appendMessage(msgData, true);
+
+        // 清空输入框
         input.value = '';
+
+    } catch (error) {
+        console.error('发送消息失败:', error);
+    }
+}
+
+// 显示消息函数
+function appendMessage(msg, isSent) {
+    const chatMessages = document.querySelector('.chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+
+    // 处理时间显示
+    let timeStr;
+    if (msg.timestamp) {
+        const date = new Date(Number(msg.timestamp));
+        timeStr = formatMessageTime(date);
+    } else {
+        timeStr = formatMessageTime(new Date());
+    }
+
+    messageDiv.innerHTML = `
+        <div class="message-content">${msg.content}</div>
+        <div class="message-time">${timeStr}</div>
+    `;
+
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 添加时间格式化函数
+function formatMessageTime(date) {
+    try {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const timeStr = `${hours}:${minutes}`;
+
+        if (date >= today) {
+            return timeStr; // 今天的消息只显示时间
+        } else if (date >= yesterday) {
+            return `昨天 ${timeStr}`; // 昨天的消息
+        } else {
+            // 更早的消息显示完整日期
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${month}-${day} ${timeStr}`;
+        }
+    } catch (error) {
+        console.error('时间格式化失败:', error);
+        return '时间未知';
+    }
+}
+
+// 处理收到的消息
+function handleReceivedMessage(event) {
+    try {
+        // 直接使用ArrayBuffer数据
+        const buffer = new Uint8Array(event.data);
+        const msg = Message.decode(buffer);
+        console.log('收到消息:', msg);
+
+        // 显示消息
+        appendMessage({
+            content: msg.content,
+            timestamp: new Date().getTime(),
+            from: msg.from,
+            to: msg.to
+        }, msg.from === currentUserId);
+
+    } catch (error) {
+        console.error('处理消息失败:', error);
     }
 }
 
@@ -180,16 +324,16 @@ async function loadFriendsList() {
                 return;
             }
 
-            // 使用 map 遍历好友列表，为每个好友创建 HTML
+            // 修改这里，为每个好友添加点击事件
             const friendsHTML = result.friends.map(friend => `
-    <div class="friend-item" onclick="showChatHistory(${friend.ID}, '${friend.username}')">
-        <img src="${friend.avatar || '/static/default-avatar.jpg'}" alt="头像" class="friend-avatar">
-        <div class="friend-info">
-            <div class="friend-name">${friend.username}</div>
-            <div class="friend-account">${friend.account}</div>
-        </div>
-    </div>
-`).join('');
+                <div class="friend-item" onclick="selectChatUser('${friend.ID}', '${friend.username}')">
+                    <img src="${friend.avatar || '/static/default-avatar.jpg'}" alt="头像" class="friend-avatar">
+                    <div class="friend-info">
+                        <div class="friend-name">${friend.username}</div>
+                        <div class="friend-account">${friend.account}</div>
+                    </div>
+                </div>
+            `).join('');
 
             // 将生成的 HTML 插入到容器中
             container.innerHTML = friendsHTML;
@@ -199,16 +343,21 @@ async function loadFriendsList() {
     }
 }
 
-async function showChatHistory(friendId, friendName) {
-    // 更新聊天头部显示的好友名称
-    document.querySelector('.chat-header h2').textContent = friendName;
+// chat.js
 
+async function loadChatHistory(friendId) {
     try {
+        // 显示加载中的提示
+        const chatMessages = document.querySelector('.chat-messages');
+        chatMessages.innerHTML = '<div class="loading-messages">加载聊天记录中...</div>';
+
         const msgReq = {
             messageType: 1,  // 假设 1 代表获取聊天记录
             userId: Number(currentUserId),
             targetID: Number(friendId)
         };
+
+        console.log('请求历史消息，参数:', msgReq);
 
         const response = await fetch('http://127.0.0.1:9090/user/history', {
             method: 'POST',
@@ -220,39 +369,54 @@ async function showChatHistory(friendId, friendName) {
         });
 
         const result = await response.json();
-        const chatMessages = document.querySelector('.chat-messages');
+        console.log('获取到的历史消息:', result);
 
         if (result.success && result.messages) {
-            const messagesHTML = result.messages.map(msg => {
-                const numCurrentUserId = Number(currentUserId);
-                const numSenderId = Number(msg.senderId);
+            // 清空加载提示
+            chatMessages.innerHTML = '';
 
-                console.log('消息发送者ID:', numSenderId);
-                console.log('当前用户ID:', numCurrentUserId);
-                console.log('是否是发送消息:', numSenderId === numCurrentUserId);
+            // 如果没有消息记录
+            if (result.messages.length === 0) {
+                chatMessages.innerHTML = '<div class="no-messages">暂无聊天记录</div>';
+                return;
+            }
 
-                return `
-                <div class="message ${numSenderId === numCurrentUserId ? 'sent' : 'received'}">
-                    <div class="message-content">${msg.content}</div>
-                    <div class="message-time">${new Date(msg.timestamp).toLocaleString()}</div>
-                </div>
-            `;
-            }).join('');
+            // 对消息按时间戳进行排序
+            const sortedMessages = result.messages.sort((a, b) => {
+                // 将字符串时间转换为时间戳进行比较
+                const timeA = new Date(a.timestamp).getTime();
+                const timeB = new Date(b.timestamp).getTime();
+                return timeA - timeB; // 升序排列，最早的消息在前
+            });
 
-            chatMessages.innerHTML = messagesHTML;
+            console.log('排序后的消息:', sortedMessages);
+
+            // 显示排序后的消息
+            sortedMessages.forEach(msg => {
+                const isSent = Number(msg.senderId) === Number(currentUserId);
+                appendMessage({
+                    content: msg.content,
+                    timestamp: msg.timestamp,
+                    from: msg.senderId,
+                    to: msg.receiverId
+                }, isSent);
+            });
+
+            // 滚动到最新消息
             chatMessages.scrollTop = chatMessages.scrollHeight;
         } else {
-            chatMessages.innerHTML = '<div class="no-messages">暂无聊天记录</div>';
+            chatMessages.innerHTML = '<div class="error-message">加载聊天记录失败</div>';
         }
     } catch (error) {
-        console.error('获取聊天记录失败:', error);
+        console.error('加载聊天记录失败:', error);
+        document.querySelector('.chat-messages').innerHTML =
+            '<div class="error-message">加载聊天记录失败，请重试</div>';
     }
 }
 
-let ws = null;
 
 function connectWebSocket() {
-    const user = currentUserAccount;
+    const user = currentUserId;
     if (!user) {
         alert('未找到用户信息');
         return;
@@ -272,29 +436,25 @@ function connectWebSocket() {
     try {
         ws = new WebSocket(wsUrl);
 
+        ws.binaryType = 'arraybuffer';
+
         ws.onopen = function() {
             console.log('WebSocket连接已建立!');
+            const wsIcon = document.getElementById('ws-connect');
             wsIcon.className = 'nav-icon connected';
         };
 
-        ws.onmessage = function(event) {
-            console.log('收到消息:', event.data);
-            const reader = new FileReader();
-            reader.onloadend = function () {
-                console.log(reader.result);  // 输出：Blob 数据
-            };
-
-            reader.readAsText(event.data);  // 将 Blob 内容作为文本读取
-
-        };
+        ws.onmessage = handleReceivedMessage;
 
         ws.onerror = function(error) {
             console.error('WebSocket错误:', error);
+            const wsIcon = document.getElementById('ws-connect');
             wsIcon.className = 'nav-icon disconnected';
         };
 
         ws.onclose = function() {
             console.log('WebSocket连接已关闭');
+            const wsIcon = document.getElementById('ws-connect');
             wsIcon.className = 'nav-icon disconnected';
         };
 
@@ -304,4 +464,32 @@ function connectWebSocket() {
         console.error('创建WebSocket连接失败:', error);
         wsIcon.className = 'nav-icon disconnected';
     }
+}
+
+// 选择聊天对象时的处理
+function selectChatUser(userId, userName) {
+    // 保存当前聊天对象ID
+    currentChatUser = userId;
+
+    // 更新聊天窗口标题
+    document.querySelector('.chat-header h2').textContent = userName;
+
+    // 清空聊天记录区域
+    const chatMessages = document.querySelector('.chat-messages');
+    chatMessages.innerHTML = '';
+
+    // 激活输入框
+    const messageInput = document.getElementById('messageInput');
+    messageInput.disabled = false;
+    messageInput.placeholder = `发送消息给 ${userName}...`;
+    messageInput.focus();
+
+    // 高亮选中的好友
+    document.querySelectorAll('.friend-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+
+    // 加载历史消息
+    loadChatHistory(userId);
 }
