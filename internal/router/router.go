@@ -2,58 +2,49 @@ package router
 
 import (
 	"IMChat_App/internal/handler"
+	"IMChat_App/internal/middleware"
 	"IMChat_App/internal/websocket"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func NewRouter() {
 	r := gin.Default()
-	r.Use(Cors())
+	r.Use(middleware.Cors())
 
 	r.Static("/css", "./web/static/css")
 	r.Static("/js", "./web/static/js")
 	r.LoadHTMLFiles("web/templates/login.html", "web/templates/chat.html")
 
-	r.GET("/ws", websocket.RunSocket)
+	publicGroup := r.Group("")
+	{
+		// 页面路由
+		publicGroup.GET("/login", handler.LoadLoginPage)
+		publicGroup.GET("/chat/:account", handler.LoadChatPage)
 
-	r.GET("/login", handler.LoadLoginPage)
+		// 认证相关API
+		publicGroup.POST("/user/register", handler.Register)
+		publicGroup.POST("/user/login", handler.Login)
+		publicGroup.GET("/ws", websocket.RunSocket)
+	}
 
-	r.GET("/chat/:account", handler.LoadChatPage)
-	r.POST("/user/register", handler.Register)
-	r.POST("/user/login", handler.Login)
-	r.POST("/user/adduser", handler.AddUser)
-	r.GET("/user/searchuser", handler.SearchUser)
-	r.GET("/user/getfriends", handler.GetFriendsList)
+	// 需要JWT认证的路由组
+	authorized := r.Group("")
+	authorized.Use(middleware.AuthMiddleware())        // JWT认证中间件
+	authorized.Use(middleware.AutoRefreshMiddleware()) // JWT刷新中间件
+	{
 
-	r.POST("/user/history", handler.GetMsg)
+		// 用户相关API
+		userGroup := authorized.Group("/user")
+		{
+			// 好友相关
+			userGroup.POST("/adduser", handler.AddUser)
+			userGroup.GET("/searchuser", handler.SearchUser)
+			userGroup.GET("/getfriends", handler.GetFriendsList)
+
+			// 消息相关
+			userGroup.POST("/history", handler.GetMsg)
+		}
+	}
 
 	r.Run(":9090")
-}
-
-// 跨域中间件
-func Cors() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		method := c.Request.Method
-		origin := c.Request.Header.Get("Origin") //请求头部
-		if origin != "" {
-			c.Header("Access-Control-Allow-Origin", "*") // 可将将 * 替换为指定的域名
-			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
-			c.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
-			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type")
-			c.Header("Access-Control-Allow-Credentials", "true")
-		}
-		//允许类型校验
-		if method == "OPTIONS" {
-			c.JSON(http.StatusOK, "ok!")
-		}
-
-		defer func() {
-			if err := recover(); err != nil {
-				return
-			}
-		}()
-
-		c.Next()
-	}
 }

@@ -54,10 +54,15 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// 生成JWT
+	token, err := service.GenerateJWT(user.ID, user.Account)
+	fmt.Println(token)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"account": user.Account,
 		"message": "登录成功",
+		"token":   token,
 	})
 }
 

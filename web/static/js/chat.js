@@ -1,5 +1,6 @@
 const currentUserId = document.getElementById('currentUserId').value;
 const currentUserAccount = document.getElementById('currentUserAccount').value;
+const token = localStorage.getItem('jwt_token');
 let ws = null;
 let currentChatUser = null; // 当前聊天对象
 
@@ -228,6 +229,7 @@ async function searchFriend() {
             method: 'GET',
             credentials: 'include',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
@@ -271,6 +273,7 @@ async function addFriend(targetUserId) {
             method: 'POST',
             credentials: 'include',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -303,11 +306,13 @@ document.getElementById('friendAccount').addEventListener('keypress', function(e
 async function loadFriendsList() {
     try {
         console.log('加载好友列表，当前用户ID:', currentUserId);
+        console.log('JWT Token:', token);
 
         const response = await fetch(`http://127.0.0.1:9090/user/getfriends?userId=${currentUserId}`, {
             method: 'GET',
             credentials: 'include',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
@@ -361,6 +366,7 @@ async function loadChatHistory(friendId) {
             method: 'POST',
             credentials: 'include',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(msgReq)

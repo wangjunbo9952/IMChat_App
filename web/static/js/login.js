@@ -59,8 +59,8 @@ async function handleSubmit(formType) {
             if (formType === 'login') {
                 let baseUrl = 'http://127.0.0.1:9090/chat/';
                 let href = baseUrl + encodeURIComponent(result.account);  // 预先生成完整的 URL
-
-                console.log("Generated URL:", href);
+                // 存储 token
+                localStorage.setItem('jwt_token', result.token);
 
                 window.location.href = href;
             } else {
