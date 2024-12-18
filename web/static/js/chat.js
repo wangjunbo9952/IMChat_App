@@ -357,8 +357,6 @@ async function loadChatHistory(friendId) {
             targetID: Number(friendId)
         };
 
-        console.log('请求历史消息，参数:', msgReq);
-
         const response = await fetch('http://127.0.0.1:9090/user/history', {
             method: 'POST',
             credentials: 'include',
@@ -369,7 +367,6 @@ async function loadChatHistory(friendId) {
         });
 
         const result = await response.json();
-        console.log('获取到的历史消息:', result);
 
         if (result.success && result.messages) {
             // 清空加载提示
@@ -388,8 +385,6 @@ async function loadChatHistory(friendId) {
                 const timeB = new Date(b.timestamp).getTime();
                 return timeA - timeB; // 升序排列，最早的消息在前
             });
-
-            console.log('排序后的消息:', sortedMessages);
 
             // 显示排序后的消息
             sortedMessages.forEach(msg => {

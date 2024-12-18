@@ -3,7 +3,6 @@ package handler
 import (
 	"IMChat_App/internal/dao/pool"
 	"IMChat_App/internal/model"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -14,7 +13,6 @@ func LoadChatPage(c *gin.Context) {
 	account := c.Param("account")
 	var user model.User
 	if err := db.First(&user, "account = ?", account).Error; err != nil {
-		fmt.Println(account)
 		return
 	}
 
@@ -23,4 +21,10 @@ func LoadChatPage(c *gin.Context) {
 		"user": user,
 	})
 
+}
+
+func LoadLoginPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "login.html", gin.H{
+		"success": true,
+	})
 }

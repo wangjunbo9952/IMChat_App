@@ -13,9 +13,11 @@ func NewRouter() {
 
 	r.Static("/css", "./web/static/css")
 	r.Static("/js", "./web/static/js")
-	r.LoadHTMLFiles("web/templates/chat.html")
+	r.LoadHTMLFiles("web/templates/login.html", "web/templates/chat.html")
 
 	r.GET("/ws", websocket.RunSocket)
+
+	r.GET("/login", handler.LoadLoginPage)
 
 	r.GET("/chat/:account", handler.LoadChatPage)
 	r.POST("/user/register", handler.Register)
