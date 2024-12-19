@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"IMChat_App/internal/kafka"
 	"IMChat_App/pkg/common"
 	"IMChat_App/pkg/protocol"
 	"github.com/gogo/protobuf/proto"
@@ -46,7 +47,8 @@ func (c *Client) Read() {
 			c.handleHeartbeat()
 		} else {
 			// 处理其他消息
-			MyServer.Broadcast <- message
+			// MyServer.Broadcast <- message
+			kafka.SendMessage(kafka.GetProducer(), "p2p", msg)
 		}
 	}
 }

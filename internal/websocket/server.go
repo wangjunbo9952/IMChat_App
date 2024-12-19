@@ -1,7 +1,6 @@
 package websocket
 
 import (
-	"IMChat_App/internal/service"
 	"IMChat_App/pkg/common"
 	"IMChat_App/pkg/protocol"
 	"github.com/gogo/protobuf/proto"
@@ -60,7 +59,7 @@ func (s *Server) Start() {
 					// 保存消息只会在存在socket的一个端上进行保存，防止分布式部署后，消息重复问题
 					_, exits := s.Clients[msg.From]
 					if exits {
-						service.SaveMessage(msg)
+						// service.SaveMessage(msg)
 					}
 				}
 				// Send to a specific user

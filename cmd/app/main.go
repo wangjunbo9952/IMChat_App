@@ -2,6 +2,7 @@ package main
 
 import (
 	"IMChat_App/internal/dao/pool"
+	"IMChat_App/internal/kafka"
 	"IMChat_App/internal/router"
 	"IMChat_App/internal/websocket"
 	"fmt"
@@ -14,9 +15,12 @@ func main() {
 		return
 	}
 
+	kafka.InitConsumer("chat")
+	kafka.InitProducer()
+	go kafka.ConsumeMessages(kafka.GetConsumer(), "p2p") // 单聊消息
+
 	go websocket.MyServer.Start()
 
 	router.NewRouter()
-	// fmt.Println("mysql connect success")
 
 }
