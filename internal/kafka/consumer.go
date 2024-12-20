@@ -38,6 +38,7 @@ func ConsumeMessages(consumer *kafka.Consumer, topic string) {
 			msg := &protocol.Message{}
 			proto.Unmarshal(rawMsg.Value, msg)
 			service.SaveMessage(msg)
+			service.SaveMessageToRds(rawMsg.Value, msg.From, msg.To)
 		} else {
 			fmt.Println("Error while consuming message: %s", err)
 		}

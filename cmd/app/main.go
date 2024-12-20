@@ -5,13 +5,16 @@ import (
 	"IMChat_App/internal/kafka"
 	"IMChat_App/internal/router"
 	"IMChat_App/internal/websocket"
-	"fmt"
 )
 
 func main() {
 	err := pool.InitDB()
 	if err != nil {
-		fmt.Println("mysql connect failed!")
+		return
+	}
+
+	err = pool.InitRedisClient()
+	if err != nil {
 		return
 	}
 
