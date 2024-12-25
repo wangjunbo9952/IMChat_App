@@ -10,17 +10,14 @@ const messageProto = `
 syntax = "proto3";
 
 message Message {
-    string avatar = 1;       
-    string fromUsername = 2; 
-    string from = 3;         
-    string to = 4;           
-    string content = 5;      
-    int32 contentType = 6;   
-    string type = 7;         
-    int32 messageType = 8;   
-    string url = 9;          
-    string fileSuffix = 10;  
-    bytes file = 11;        
+    int32 sender = 1;            
+  int32 receiver = 2;           
+  string content = 3;           
+  string contentType = 4;       
+  string messageType = 5;       
+  string sendAt = 6;        
+  string status = 7;            
+  string attachment = 8;        
 }`;
 
 // 在页面加载时初始化protobuf
@@ -68,18 +65,14 @@ function sendMessage() {
 
     try {
         const msgData = {
-            avatar: '/static/default-avatar.jpg',
-            fromUsername: currentUserAccount,
-            from: currentUserId,
-            to: currentChatUser,
-            content: message,
-            contentType: 1,
-            type: 'chat',
-            messageType: 1,
-            url: '',
-            fileSuffix: '',
-            file: new Uint8Array(),
-            timestamp: Date.now() // 添加时间戳
+            sender: parseInt(currentUserId),          // 发送者ID (int32)
+            receiver: parseInt(currentChatUser),      // 接收者ID (int32)
+            content: message,               // 文本内容
+            contentType: "1",               // 1:文字 2:普通文件 3:图片 4:音频 5:视频 6:语音聊天 7:视频聊天
+            messageType: "1",               // 1:单聊 2:群聊
+            sendAt: new Date().toISOString(),
+            status: "sent",                 // 消息状态
+            attachment: ""                  // 附件URL或路径
         };
 
         // 验证消息格式
@@ -87,6 +80,15 @@ function sendMessage() {
         if (errMsg) {
             throw Error(errMsg);
         }
+
+        console.log('Sender:', msgData.sender);
+        console.log('Receiver:', msgData.receiver);
+        console.log('Content:', msgData.content);
+        console.log('Content Type:', msgData.contentType);
+        console.log('Message Type:', msgData.messageType);
+        console.log('Send At:', msgData.sendAt);
+        console.log('Status:', msgData.status);
+        console.log('Attachment:', msgData.attachment);
 
         // 创建消息实例
         const protoMessage = Message.create(msgData);
@@ -431,7 +433,7 @@ function connectWebSocket() {
     const wsIcon = document.getElementById('ws-connect');
     wsIcon.className = 'nav-icon connecting';
 
-    const wsUrl = `ws://127.0.0.1:9090/ws?user=${encodeURIComponent(user)}`;
+    const wsUrl = `ws://127.0.0.1:9090/ws?id=${encodeURIComponent(user)}`;
     console.log('尝试连接WebSocket:', wsUrl);
 
     try {

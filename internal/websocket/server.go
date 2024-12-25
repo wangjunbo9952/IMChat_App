@@ -1,8 +1,8 @@
 package websocket
 
 import (
-	"IMChat_App/pkg/common"
-	"IMChat_App/pkg/protocol"
+	pro "IMChat_App/pkg/proto"
+	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"sync"
 )
@@ -10,8 +10,8 @@ import (
 var MyServer = NewServer()
 
 type Server struct {
-	Clients   map[string]*Client
-	mutex     *sync.Mutex
+	Clients   map[int32]*Client
+	mutex     *sync.RWMutex
 	Broadcast chan []byte
 	Register  chan *Client
 	Ungister  chan *Client
@@ -19,8 +19,8 @@ type Server struct {
 
 func NewServer() *Server {
 	return &Server{
-		mutex:     &sync.Mutex{},
-		Clients:   make(map[string]*Client),
+		mutex:     &sync.RWMutex{},
+		Clients:   make(map[int32]*Client),
 		Broadcast: make(chan []byte),
 		Register:  make(chan *Client),
 		Ungister:  make(chan *Client),
@@ -32,50 +32,42 @@ func (s *Server) Start() {
 	for {
 		select {
 		case conn := <-s.Register:
-			s.Clients[conn.Name] = conn
+			s.mutex.Lock()
+			s.Clients[conn.Id] = conn
+			s.mutex.Unlock()
 
 			// Welcome message to the new client
-			welcomeMsg := &protocol.Message{
-				From:    "System",
-				To:      conn.Name,
-				Content: "Welcome to the chat room!",
-			}
-			protoMsg, _ := proto.Marshal(welcomeMsg)
-			conn.Send <- protoMsg
+			welcomeMsg := "Welcome!"
+			conn.Send <- []byte(welcomeMsg)
 
 		case conn := <-s.Ungister:
-			if _, ok := s.Clients[conn.Name]; ok {
+			s.mutex.RLock()
+			if _, ok := s.Clients[conn.Id]; ok {
 				close(conn.Send)
-				delete(s.Clients, conn.Name)
+				s.mutex.RUnlock()
+				s.mutex.Lock()
+				delete(s.Clients, conn.Id)
+				s.mutex.Unlock()
+			} else {
+				s.mutex.RUnlock()
 			}
 
 		case message := <-s.Broadcast:
-			// Process the incoming message and broadcast it to the intended recipient(s)
-			msg := &protocol.Message{}
-			proto.Unmarshal(message, msg)
+			fmt.Println("来消息了")
 
-			if msg.To != "" {
-				if msg.ContentType >= common.TEXT {
-					// 保存消息只会在存在socket的一个端上进行保存，防止分布式部署后，消息重复问题
-					_, exits := s.Clients[msg.From]
-					if exits {
-						// service.SaveMessage(msg)
-					}
-				}
-				// Send to a specific user
-				if client, ok := s.Clients[msg.To]; ok {
-					client.Send <- message
-				}
+			msg := &pro.Message{}
+			err := proto.Unmarshal(message, msg)
+			if err != nil {
+				fmt.Println("反序列化失败")
+			}
+
+			// 发送消息到某个client
+			s.mutex.RLock()
+			if client, ok := s.Clients[msg.Receiver]; ok {
+				client.Send <- message
+				s.mutex.RUnlock()
 			} else {
-				// Broadcast to all clients
-				for _, conn := range s.Clients {
-					select {
-					case conn.Send <- message:
-					default:
-						close(conn.Send)
-						delete(s.Clients, conn.Name)
-					}
-				}
+				s.mutex.RUnlock()
 			}
 		}
 	}

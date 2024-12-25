@@ -1,8 +1,9 @@
 package router
 
 import (
-	"IMChat_App/internal/handler"
-	"IMChat_App/internal/middleware"
+	api "IMChat_App/api/websocket"
+	"IMChat_App/internal/auth"
+	"IMChat_App/internal/router/middleware"
 	"IMChat_App/internal/websocket"
 	"github.com/gin-gonic/gin"
 )
@@ -18,12 +19,12 @@ func NewRouter() {
 	publicGroup := r.Group("")
 	{
 		// 页面路由
-		publicGroup.GET("/login", handler.LoadLoginPage)
-		publicGroup.GET("/chat/:account", handler.LoadChatPage)
+		publicGroup.GET("/login", auth.LoadLoginPage)
+		publicGroup.GET("/chat/:account", auth.LoadChatPage)
 
 		// 认证相关API
-		publicGroup.POST("/user/register", handler.Register)
-		publicGroup.POST("/user/login", handler.Login)
+		publicGroup.POST("/user/register", auth.Register)
+		publicGroup.POST("/user/login", auth.Login)
 		publicGroup.GET("/ws", websocket.RunSocket)
 	}
 
@@ -37,12 +38,12 @@ func NewRouter() {
 		userGroup := authorized.Group("/user")
 		{
 			// 好友相关
-			userGroup.POST("/adduser", handler.AddUser)
-			userGroup.GET("/searchuser", handler.SearchUser)
-			userGroup.GET("/getfriends", handler.GetFriendsList)
+			userGroup.POST("/adduser", auth.AddUser)
+			userGroup.GET("/searchuser", auth.SearchUser)
+			userGroup.GET("/getfriends", auth.GetFriendsList)
 
 			// 消息相关
-			userGroup.POST("/history", handler.GetMsg)
+			userGroup.POST("/history", api.GetHistory)
 		}
 	}
 

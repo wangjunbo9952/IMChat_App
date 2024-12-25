@@ -1,16 +1,17 @@
 package websocket
 
 import (
-	"IMChat_App/internal/kafka"
-	"IMChat_App/pkg/common"
-	"IMChat_App/pkg/protocol"
+	"IMChat_App/api/mq/rabbitmq"
+	"IMChat_App/pkg/common/constant"
+	pro "IMChat_App/pkg/proto"
+	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
 	Conn *websocket.Conn
-	Name string
+	Id   int32
 	Send chan []byte
 }
 
@@ -35,21 +36,11 @@ func (c *Client) Read() {
 			break
 		}
 
-		// 处理消息
-		msg := &protocol.Message{}
-		err = proto.Unmarshal(message, msg)
+		err = rabbitmq.SendMsgToMq(message)
 		if err != nil {
-			continue
+			fmt.Println("message send failed, msg : ", message)
 		}
-
-		// 处理心跳消息
-		if msg.Type == common.HEAT_BEAT {
-			c.handleHeartbeat()
-		} else {
-			// 处理其他消息
-			// MyServer.Broadcast <- message
-			kafka.SendMessage(kafka.GetProducer(), "p2p", msg)
-		}
+		fmt.Println("message send success, msg : ", message)
 	}
 }
 
@@ -69,9 +60,9 @@ func (c *Client) Write() {
 
 func (c *Client) handleHeartbeat() {
 	// 响应心跳消息
-	pongMsg := &protocol.Message{
-		Content: common.PONG,
-		Type:    common.HEAT_BEAT,
+	pongMsg := &pro.Message{
+		Content:     constant.PONG,
+		MessageType: constant.HEAT_BEAT,
 	}
 	pongBytes, err := proto.Marshal(pongMsg)
 	if err != nil {

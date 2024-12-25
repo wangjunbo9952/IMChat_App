@@ -3,7 +3,7 @@ jwt:
 
 
 redis:
-  addr: "192.168.158.128:6379"
+  addr: "122.51.195.185:6379"
   password: "123123"
   DB: 0
   poolSize: 30
